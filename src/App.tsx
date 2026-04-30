@@ -13,7 +13,11 @@ const RED = "#E24B4A";
 const BLUE_FILL = "#378ADD";
 const RED_FILL = "#E24B4A";
 
-function makeGrid(rows, cols, val = null) {
+function makeGrid(
+  rows: number,
+  cols: number,
+  val: string | null = null
+) {
   return Array.from({ length: rows }, () => Array(cols).fill(val));
 }
 
