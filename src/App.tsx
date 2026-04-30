@@ -11,12 +11,6 @@ const COLS = 3;
 const ROWS = 3;
 const PAD = 50;
 const STEP = 90;
-const DOT_R = 7;
-
-const BLUE = "#378ADD";
-const RED = "#E24B4A";
-const BLUE_FILL = "#378ADD";
-const RED_FILL = "#E24B4A";
 
 function makeGrid<T>(rows: number, cols: number, val: T | null = null): (T | null)[][] {
   return Array.from({ length: rows }, () => Array(cols).fill(val));
@@ -31,7 +25,7 @@ export default function App() {
   const [hover, setHover] = useState<Hover>(null);
   const [winner, setWinner] = useState<Winner>(null);
 
-  const playerColor = (p: Player) => (p === "blue" ? BLUE : RED);
+  const playerColor = (p: Player) => (p === "blue" ? "#378ADD" : "#E24B4A");
 
   const initGame = () => {
     setTurn("blue");
@@ -73,8 +67,10 @@ export default function App() {
             newV[br][bc + 1]
           ) {
             newBoxes[br][bc] = turn;
+
             if (turn === "blue") newScores.blue++;
             else newScores.red++;
+
             captured = true;
           }
         }
@@ -128,83 +124,59 @@ export default function App() {
       alignItems: "center",
       justifyContent: "center",
       background: "#f5f5f3",
-      fontFamily: "'Georgia', serif",
+      fontFamily: "Georgia, serif",
     },
     card: {
       background: "#fff",
       borderRadius: 20,
-      padding: "2rem 2.5rem",
+      padding: "2rem",
       boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: "1.25rem",
+      gap: "1rem",
     },
     title: {
-      margin: 0,
       fontSize: 28,
       fontWeight: 700,
-      color: "#1a1a1a",
+      margin: 0,
     },
     scoreBar: {
       display: "flex",
-      alignItems: "center",
       gap: 16,
+      alignItems: "center",
     },
     badge: {
       display: "flex",
-      alignItems: "center",
       gap: 8,
-      padding: "8px 16px",
-      borderRadius: 12,
-      border: "1.5px solid #e5e5e5",
-      background: "#fafafa",
+      alignItems: "center",
+      padding: "8px 14px",
+      borderRadius: 10,
+      border: "1px solid #ddd",
     },
     activeBadge: {
-      border: "1.5px solid #1a1a1a",
-      background: "#fff",
+      border: "2px solid #000",
     },
     swatch: {
-      width: 12,
-      height: 12,
+      width: 10,
+      height: 10,
       borderRadius: "50%",
-    },
-    badgeLabel: {
-      fontSize: 14,
-      fontWeight: 500,
-      color: "#333",
-    },
-    scoreNum: {
-      fontSize: 20,
-      fontWeight: 700,
-      minWidth: 20,
-      textAlign: "center",
-    },
-    vs: {
-      fontSize: 13,
-      color: "#aaa",
     },
     svg: {
       display: "block",
     },
     turnMsg: {
-      fontSize: 15,
-      color: "#555",
+      fontSize: 16,
     },
     winnerMsg: {
       fontSize: 20,
       fontWeight: 600,
-      color: "#1a1a1a",
     },
     resetBtn: {
-      padding: "10px 28px",
-      borderRadius: 10,
-      border: "1.5px solid #ddd",
-      background: "transparent",
-      fontSize: 14,
+      padding: "10px 20px",
+      borderRadius: 8,
+      border: "1px solid #ccc",
       cursor: "pointer",
-      color: "#333",
-      fontFamily: "inherit",
     },
   };
 
@@ -214,52 +186,79 @@ export default function App() {
         <h1 style={styles.title}>Dots & Boxes</h1>
 
         <div style={styles.scoreBar}>
-          <div
-            style={{
-              ...styles.badge,
-              ...(turn === "blue" && !winner ? styles.activeBadge : {}),
-            }}
-          >
-            <div style={{ ...styles.swatch, background: BLUE }} />
-            <span>{scores.blue}</span>
+          <div style={{ ...styles.badge, ...(turn === "blue" ? styles.activeBadge : {}) }}>
+            <div style={{ ...styles.swatch, background: "#378ADD" }} />
+            {scores.blue}
           </div>
 
-          <span style={styles.vs}>vs</span>
-
-          <div
-            style={{
-              ...styles.badge,
-              ...(turn === "red" && !winner ? styles.activeBadge : {}),
-            }}
-          >
-            <span>{scores.red}</span>
-            <div style={{ ...styles.swatch, background: RED }} />
+          <div style={{ ...styles.badge, ...(turn === "red" ? styles.activeBadge : {}) }}>
+            {scores.red}
+            <div style={{ ...styles.swatch, background: "#E24B4A" }} />
           </div>
         </div>
 
         <svg viewBox={`0 0 ${svgW} ${svgH}`} width={svgW} height={svgH} style={styles.svg}>
-          {/* (your rendering logic unchanged for brevity) */}
+          {/* Horizontal lines */}
+          {hLines.map((row, r) =>
+            row.map((owner, c) => {
+              const x1 = PAD + c * STEP;
+              const x2 = PAD + (c + 1) * STEP;
+              const y = PAD + r * STEP;
+
+              return (
+                <line
+                  key={`h-${r}-${c}`}
+                  x1={x1}
+                  y1={y}
+                  x2={x2}
+                  y2={y}
+                  stroke={owner ? playerColor(owner) : "transparent"}
+                  strokeWidth={4}
+                  onClick={() => handleClick("h", r, c)}
+                  style={{ cursor: "pointer" }}
+                />
+              );
+            })
+          )}
+
+          {/* Vertical lines */}
+          {vLines.map((row, r) =>
+            row.map((owner, c) => {
+              const x = PAD + c * STEP;
+              const y1 = PAD + r * STEP;
+              const y2 = PAD + (r + 1) * STEP;
+
+              return (
+                <line
+                  key={`v-${r}-${c}`}
+                  x1={x}
+                  y1={y1}
+                  x2={x}
+                  y2={y2}
+                  stroke={owner ? playerColor(owner) : "transparent"}
+                  strokeWidth={4}
+                  onClick={() => handleClick("v", r, c)}
+                  style={{ cursor: "pointer" }}
+                />
+              );
+            })
+          )}
         </svg>
 
         {winner && (
           <div style={styles.winnerMsg}>
-            {winner === "tie"
-              ? "🤝 It's a tie!"
-              : `🎉 ${winner} wins!`}
+            {winner === "tie" ? "Tie!" : `${winner} wins!`}
           </div>
         )}
 
         {!winner && (
           <div style={styles.turnMsg}>
-            <span style={{ color: playerColor(turn), fontWeight: 600 }}>
-              {turn}
-            </span>{" "}
-            turn
+            Turn: <b>{turn}</b>
           </div>
         )}
 
         <button style={styles.resetBtn} onClick={initGame}>
-          New Game
+          Reset
         </button>
       </div>
     </div>
