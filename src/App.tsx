@@ -12,6 +12,9 @@ const ROWS = 3;
 const PAD = 50;
 const STEP = 90;
 
+const BLUE = "#378ADD";
+const RED = "#E24B4A";
+
 function makeGrid<T>(rows: number, cols: number, val: T | null = null): (T | null)[][] {
   return Array.from({ length: rows }, () => Array(cols).fill(val));
 }
@@ -25,9 +28,9 @@ export default function App() {
   const [hover, setHover] = useState<Hover>(null);
   const [winner, setWinner] = useState<Winner>(null);
 
-  const playerColor = (p: Player) => (p === "blue" ? "#378ADD" : "#E24B4A");
+  const playerColor = (p: Player) => (p === "blue" ? BLUE : RED);
 
-  const resetGame = () => {
+  const reset = () => {
     setTurn("blue");
     setHLines(makeGrid(ROWS + 1, COLS));
     setVLines(makeGrid(ROWS, COLS + 1));
@@ -67,10 +70,8 @@ export default function App() {
             newV[r][c + 1]
           ) {
             newBoxes[r][c] = turn;
-
             if (turn === "blue") newScores.blue++;
             else newScores.red++;
-
             captured = true;
           }
         }
@@ -109,7 +110,7 @@ export default function App() {
       if (move) {
         setTimeout(() => {
           handleClick(move.type, move.r, move.c);
-        }, 200);
+        }, 150);
       }
     }
   }, [turn, hLines, vLines, boxes, scores, winner, handleClick]);
@@ -141,39 +142,12 @@ export default function App() {
       fontWeight: 700,
       margin: 0,
     },
-    svg: {
-      display: "block",
-    },
-    scoreBar: {
-      display: "flex",
-      gap: 16,
-      alignItems: "center",
-    },
-    badge: {
-      padding: "6px 12px",
-      borderRadius: 10,
-      border: "1px solid #ddd",
-      display: "flex",
-      gap: 6,
-      alignItems: "center",
-    },
-    dot: {
-      width: 10,
-      height: 10,
-      borderRadius: "50%",
-    },
-    turn: {
-      fontSize: 14,
-    },
-    winner: {
-      fontSize: 18,
-      fontWeight: 600,
-    },
-    button: {
+    btn: {
       padding: "8px 16px",
       borderRadius: 8,
       border: "1px solid #ccc",
       cursor: "pointer",
+      background: "white",
     },
   };
 
@@ -182,82 +156,138 @@ export default function App() {
       <div style={styles.card}>
         <h1 style={styles.title}>Dots & Boxes</h1>
 
-        <div style={styles.scoreBar}>
-          <div style={styles.badge}>
-            <div style={{ ...styles.dot, background: "#378ADD" }} />
-            {scores.blue}
+        {/* SCORE */}
+        <div style={{ display: "flex", gap: 20 }}>
+          <div>
+            🔵 {scores.blue}
           </div>
-
-          <div style={styles.badge}>
-            <div style={{ ...styles.dot, background: "#E24B4A" }} />
-            {scores.red}
+          <div>
+            🔴 {scores.red}
           </div>
         </div>
 
-        <svg viewBox={`0 0 ${svgW} ${svgH}`} width={svgW} height={svgH} style={styles.svg}>
-          {/* Horizontal lines */}
+        {/* BOARD */}
+        <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+          
+          {/* BOXES */}
+          {boxes.map((row, r) =>
+            row.map((owner, c) =>
+              owner ? (
+                <rect
+                  key={`b-${r}-${c}`}
+                  x={PAD + c * STEP + 10}
+                  y={PAD + r * STEP + 10}
+                  width={STEP - 20}
+                  height={STEP - 20}
+                  rx={6}
+                  fill={owner === "blue" ? BLUE : RED}
+                  opacity={0.25}
+                />
+              ) : null
+            )
+          )}
+
+          {/* HORIZONTAL LINES */}
           {hLines.map((row, r) =>
             row.map((owner, c) => {
-              const hovered =
+              const hoverOn =
                 hover?.type === "h" && hover.r === r && hover.c === c;
 
               return (
-                <line
-                  key={`h-${r}-${c}`}
-                  x1={PAD + c * STEP}
-                  y1={PAD + r * STEP}
-                  x2={PAD + (c + 1) * STEP}
-                  y2={PAD + r * STEP}
-                  stroke={
-                    owner
-                      ? playerColor(owner)
-                      : hovered
-                      ? playerColor(turn)
-                      : "transparent"
-                  }
-                  strokeWidth={4}
-                  opacity={owner ? 1 : hovered ? 0.4 : 0}
-                  onClick={() => handleClick("h", r, c)}
-                  onMouseEnter={() => setHover({ type: "h", r, c })}
-                  onMouseLeave={() => setHover(null)}
-                  style={{ cursor: "pointer" }}
-                />
+                <g key={`h-${r}-${c}`}>
+                  {!owner && hoverOn && (
+                    <line
+                      x1={PAD + c * STEP}
+                      y1={PAD + r * STEP}
+                      x2={PAD + (c + 1) * STEP}
+                      y2={PAD + r * STEP}
+                      stroke="#aaa"
+                      strokeWidth={6}
+                      opacity={0.4}
+                    />
+                  )}
+
+                  {!owner && (
+                    <line
+                      x1={PAD + c * STEP}
+                      y1={PAD + r * STEP}
+                      x2={PAD + (c + 1) * STEP}
+                      y2={PAD + r * STEP}
+                      stroke="transparent"
+                      strokeWidth={28}
+                      onClick={() => handleClick("h", r, c)}
+                      onMouseEnter={() => setHover({ type: "h", r, c })}
+                      onMouseLeave={() => setHover(null)}
+                      style={{ cursor: "pointer" }}
+                    />
+                  )}
+
+                  {owner && (
+                    <line
+                      x1={PAD + c * STEP}
+                      y1={PAD + r * STEP}
+                      x2={PAD + (c + 1) * STEP}
+                      y2={PAD + r * STEP}
+                      stroke={playerColor(owner)}
+                      strokeWidth={5}
+                    />
+                  )}
+                </g>
               );
             })
           )}
 
-          {/* Vertical lines */}
+          {/* VERTICAL LINES */}
           {vLines.map((row, r) =>
             row.map((owner, c) => {
-              const hovered =
+              const hoverOn =
                 hover?.type === "v" && hover.r === r && hover.c === c;
 
               return (
-                <line
-                  key={`v-${r}-${c}`}
-                  x1={PAD + c * STEP}
-                  y1={PAD + r * STEP}
-                  x2={PAD + c * STEP}
-                  y2={PAD + (r + 1) * STEP}
-                  stroke={
-                    owner
-                      ? playerColor(owner)
-                      : hovered
-                      ? playerColor(turn)
-                      : "transparent"
-                  }
-                  strokeWidth={4}
-                  opacity={owner ? 1 : hovered ? 0.4 : 0}
-                  onClick={() => handleClick("v", r, c)}
-                  onMouseEnter={() => setHover({ type: "v", r, c })}
-                  onMouseLeave={() => setHover(null)}
-                  style={{ cursor: "pointer" }}
-                />
+                <g key={`v-${r}-${c}`}>
+                  {!owner && hoverOn && (
+                    <line
+                      x1={PAD + c * STEP}
+                      y1={PAD + r * STEP}
+                      x2={PAD + c * STEP}
+                      y2={PAD + (r + 1) * STEP}
+                      stroke="#aaa"
+                      strokeWidth={6}
+                      opacity={0.4}
+                    />
+                  )}
+
+                  {!owner && (
+                    <line
+                      x1={PAD + c * STEP}
+                      y1={PAD + r * STEP}
+                      x2={PAD + c * STEP}
+                      y2={PAD + (r + 1) * STEP}
+                      stroke="transparent"
+                      strokeWidth={28}
+                      onClick={() => handleClick("v", r, c)}
+                      onMouseEnter={() => setHover({ type: "v", r, c })}
+                      onMouseLeave={() => setHover(null)}
+                      style={{ cursor: "pointer" }}
+                    />
+                  )}
+
+                  {owner && (
+                    <line
+                      x1={PAD + c * STEP}
+                      y1={PAD + r * STEP}
+                      x2={PAD + c * STEP}
+                      y2={PAD + (r + 1) * STEP}
+                      stroke={playerColor(owner)}
+                      strokeWidth={5}
+                    />
+                  )}
+                </g>
               );
             })
           )}
 
-          {/* Dots */}
+          {/* DOTS */}
           {Array.from({ length: ROWS + 1 }, (_, r) =>
             Array.from({ length: COLS + 1 }, (_, c) => (
               <circle
@@ -271,15 +301,16 @@ export default function App() {
           )}
         </svg>
 
+        {/* STATUS */}
         {winner && (
-          <div style={styles.winner}>
+          <div>
             {winner === "tie" ? "Tie!" : `${winner} wins!`}
           </div>
         )}
 
-        {!winner && <div style={styles.turn}>Turn: {turn}</div>}
+        {!winner && <div>Turn: {turn}</div>}
 
-        <button style={styles.button} onClick={resetGame}>
+        <button style={styles.btn} onClick={reset}>
           Reset
         </button>
       </div>
