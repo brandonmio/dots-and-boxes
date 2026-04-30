@@ -27,7 +27,7 @@ export default function App() {
 
   const playerColor = (p: Player) => (p === "blue" ? "#378ADD" : "#E24B4A");
 
-  const initGame = () => {
+  const resetGame = () => {
     setTurn("blue");
     setHLines(makeGrid(ROWS + 1, COLS));
     setVLines(makeGrid(ROWS, COLS + 1));
@@ -56,17 +56,17 @@ export default function App() {
       const newScores = { ...scores };
       let captured = false;
 
-      for (let br = 0; br < ROWS; br++) {
-        for (let bc = 0; bc < COLS; bc++) {
-          if (newBoxes[br][bc]) continue;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (newBoxes[r][c]) continue;
 
           if (
-            newH[br][bc] &&
-            newH[br + 1][bc] &&
-            newV[br][bc] &&
-            newV[br][bc + 1]
+            newH[r][c] &&
+            newH[r + 1][c] &&
+            newV[r][c] &&
+            newV[r][c + 1]
           ) {
-            newBoxes[br][bc] = turn;
+            newBoxes[r][c] = turn;
 
             if (turn === "blue") newScores.blue++;
             else newScores.red++;
@@ -104,11 +104,11 @@ export default function App() {
         turn,
       };
 
-      const best = getBestMove(state, 3);
+      const move = getBestMove(state, 3);
 
-      if (best) {
+      if (move) {
         setTimeout(() => {
-          handleClick(best.type, best.r, best.c);
+          handleClick(move.type, move.r, move.c);
         }, 200);
       }
     }
@@ -121,15 +121,15 @@ export default function App() {
     page: {
       minHeight: "100vh",
       display: "flex",
-      alignItems: "center",
       justifyContent: "center",
+      alignItems: "center",
       background: "#f5f5f3",
       fontFamily: "Georgia, serif",
     },
     card: {
       background: "#fff",
-      borderRadius: 20,
       padding: "2rem",
+      borderRadius: 20,
       boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
       display: "flex",
       flexDirection: "column",
@@ -141,39 +141,36 @@ export default function App() {
       fontWeight: 700,
       margin: 0,
     },
+    svg: {
+      display: "block",
+    },
     scoreBar: {
       display: "flex",
       gap: 16,
       alignItems: "center",
     },
     badge: {
-      display: "flex",
-      gap: 8,
-      alignItems: "center",
-      padding: "8px 14px",
+      padding: "6px 12px",
       borderRadius: 10,
       border: "1px solid #ddd",
+      display: "flex",
+      gap: 6,
+      alignItems: "center",
     },
-    activeBadge: {
-      border: "2px solid #000",
-    },
-    swatch: {
+    dot: {
       width: 10,
       height: 10,
       borderRadius: "50%",
     },
-    svg: {
-      display: "block",
+    turn: {
+      fontSize: 14,
     },
-    turnMsg: {
-      fontSize: 16,
-    },
-    winnerMsg: {
-      fontSize: 20,
+    winner: {
+      fontSize: 18,
       fontWeight: 600,
     },
-    resetBtn: {
-      padding: "10px 20px",
+    button: {
+      padding: "8px 16px",
       borderRadius: 8,
       border: "1px solid #ccc",
       cursor: "pointer",
@@ -186,14 +183,14 @@ export default function App() {
         <h1 style={styles.title}>Dots & Boxes</h1>
 
         <div style={styles.scoreBar}>
-          <div style={{ ...styles.badge, ...(turn === "blue" ? styles.activeBadge : {}) }}>
-            <div style={{ ...styles.swatch, background: "#378ADD" }} />
+          <div style={styles.badge}>
+            <div style={{ ...styles.dot, background: "#378ADD" }} />
             {scores.blue}
           </div>
 
-          <div style={{ ...styles.badge, ...(turn === "red" ? styles.activeBadge : {}) }}>
+          <div style={styles.badge}>
+            <div style={{ ...styles.dot, background: "#E24B4A" }} />
             {scores.red}
-            <div style={{ ...styles.swatch, background: "#E24B4A" }} />
           </div>
         </div>
 
@@ -201,20 +198,28 @@ export default function App() {
           {/* Horizontal lines */}
           {hLines.map((row, r) =>
             row.map((owner, c) => {
-              const x1 = PAD + c * STEP;
-              const x2 = PAD + (c + 1) * STEP;
-              const y = PAD + r * STEP;
+              const hovered =
+                hover?.type === "h" && hover.r === r && hover.c === c;
 
               return (
                 <line
                   key={`h-${r}-${c}`}
-                  x1={x1}
-                  y1={y}
-                  x2={x2}
-                  y2={y}
-                  stroke={owner ? playerColor(owner) : "transparent"}
+                  x1={PAD + c * STEP}
+                  y1={PAD + r * STEP}
+                  x2={PAD + (c + 1) * STEP}
+                  y2={PAD + r * STEP}
+                  stroke={
+                    owner
+                      ? playerColor(owner)
+                      : hovered
+                      ? playerColor(turn)
+                      : "transparent"
+                  }
                   strokeWidth={4}
+                  opacity={owner ? 1 : hovered ? 0.4 : 0}
                   onClick={() => handleClick("h", r, c)}
+                  onMouseEnter={() => setHover({ type: "h", r, c })}
+                  onMouseLeave={() => setHover(null)}
                   style={{ cursor: "pointer" }}
                 />
               );
@@ -224,40 +229,57 @@ export default function App() {
           {/* Vertical lines */}
           {vLines.map((row, r) =>
             row.map((owner, c) => {
-              const x = PAD + c * STEP;
-              const y1 = PAD + r * STEP;
-              const y2 = PAD + (r + 1) * STEP;
+              const hovered =
+                hover?.type === "v" && hover.r === r && hover.c === c;
 
               return (
                 <line
                   key={`v-${r}-${c}`}
-                  x1={x}
-                  y1={y1}
-                  x2={x}
-                  y2={y2}
-                  stroke={owner ? playerColor(owner) : "transparent"}
+                  x1={PAD + c * STEP}
+                  y1={PAD + r * STEP}
+                  x2={PAD + c * STEP}
+                  y2={PAD + (r + 1) * STEP}
+                  stroke={
+                    owner
+                      ? playerColor(owner)
+                      : hovered
+                      ? playerColor(turn)
+                      : "transparent"
+                  }
                   strokeWidth={4}
+                  opacity={owner ? 1 : hovered ? 0.4 : 0}
                   onClick={() => handleClick("v", r, c)}
+                  onMouseEnter={() => setHover({ type: "v", r, c })}
+                  onMouseLeave={() => setHover(null)}
                   style={{ cursor: "pointer" }}
                 />
               );
             })
           )}
+
+          {/* Dots */}
+          {Array.from({ length: ROWS + 1 }, (_, r) =>
+            Array.from({ length: COLS + 1 }, (_, c) => (
+              <circle
+                key={`d-${r}-${c}`}
+                cx={PAD + c * STEP}
+                cy={PAD + r * STEP}
+                r={6}
+                fill="#222"
+              />
+            ))
+          )}
         </svg>
 
         {winner && (
-          <div style={styles.winnerMsg}>
+          <div style={styles.winner}>
             {winner === "tie" ? "Tie!" : `${winner} wins!`}
           </div>
         )}
 
-        {!winner && (
-          <div style={styles.turnMsg}>
-            Turn: <b>{turn}</b>
-          </div>
-        )}
+        {!winner && <div style={styles.turn}>Turn: {turn}</div>}
 
-        <button style={styles.resetBtn} onClick={initGame}>
+        <button style={styles.button} onClick={resetGame}>
           Reset
         </button>
       </div>
