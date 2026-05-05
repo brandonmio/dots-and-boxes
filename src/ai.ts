@@ -10,6 +10,11 @@ export type GameState = {
   turn: "blue" | "red";
 };
 
+export type MoveEvaluation = {
+  move: Move;
+  score: number;
+};
+
 const ROWS = 3;
 const COLS = 3;
 
@@ -85,57 +90,97 @@ export function isTerminal(state: GameState): boolean {
 }
 
 // evaluate board state
-export function evaluate(state: GameState): number {
-  return state.scores.red - state.scores.blue;
+export function evaluate(
+  state: GameState,
+  aiPlayer: "blue" | "red"
+): number {
+  const humanPlayer = aiPlayer === "blue" ? "red" : "blue";
+  return state.scores[aiPlayer] - state.scores[humanPlayer];
 }
 
-// minmax algo
+// minimax algo with alpha-beta pruning
 export function minimax(
   state: GameState,
   depth: number,
-  isMax: boolean
+  aiPlayer: "blue" | "red",
+  alpha = -Infinity,
+  beta = Infinity
 ): number {
   if (depth === 0 || isTerminal(state)) {
-    return evaluate(state);
+    return evaluate(state, aiPlayer);
   }
 
-  const moves = getMoves(state);
+  const moves = getMoves(state).sort(() => Math.random() - 0.5);
+  const isMax = state.turn === aiPlayer;
 
   if (isMax) {
     let best = -Infinity;
+
     for (const move of moves) {
       const newState = applyMove(state, move);
-      const val = minimax(newState, depth - 1, false);
+      const val = minimax(newState, depth - 1, aiPlayer, alpha, beta);
+
       best = Math.max(best, val);
+      alpha = Math.max(alpha, best);
+
+      if (beta <= alpha) {
+        break;
+      }
     }
+
     return best;
   } else {
     let best = Infinity;
+
     for (const move of moves) {
       const newState = applyMove(state, move);
-      const val = minimax(newState, depth - 1, true);
+      const val = minimax(newState, depth - 1, aiPlayer, alpha, beta);
+
       best = Math.min(best, val);
+      beta = Math.min(beta, best);
+
+      if (beta <= alpha) {
+        break;
+      }
     }
+
     return best;
   }
 }
 
 // get best move for ai
-export function getBestMove(state: GameState, depth: number): Move | null {
+export function getBestMove(
+  state: GameState,
+  depth: number,
+  aiPlayer: "blue" | "red"
+): { move: Move | null; evaluations: MoveEvaluation[] } {
   let bestVal = -Infinity;
-  let bestMove: Move | null = null;
+  let bestMoves: Move[] = [];
 
   const moves = getMoves(state);
+  const evaluations: MoveEvaluation[] = [];
 
   for (const move of moves) {
     const newState = applyMove(state, move);
-    const val = minimax(newState, depth - 1, false);
+    const val = minimax(newState, depth - 1, aiPlayer);
+
+    evaluations.push({ move, score: val });
 
     if (val > bestVal) {
       bestVal = val;
-      bestMove = move;
+      bestMoves = [move];
+    } else if (val === bestVal) {
+      bestMoves.push(move);
     }
   }
 
-  return bestMove;
+  if (bestMoves.length === 0) {
+    return { move: null, evaluations };
+  }
+
+  const move = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+  evaluations.sort((a, b) => b.score - a.score);
+
+  return { move, evaluations };
 }
